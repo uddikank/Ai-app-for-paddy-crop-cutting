@@ -1,20 +1,30 @@
+import os
+import subprocess
+import sys
+
+# සර්වර් එක ඇතුළත අවශ්‍ය මෙවලම් බලෙන්ම ඉන්ස්ටෝල් කරවන කොටස
+try:
+    import google.generativeai as genai
+    from PIL import Image
+except ModuleNotFoundError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai", "pillow"])
+    import google.generativeai as genai
+    from PIL import Image
+
 import streamlit as st
-import google.generativeai as genai
-from PIL import Image
 
 # 1. ඇප් එකේ මුහුණත සහ මාතෘකා සැකසීම
 st.set_page_config(page_title="AI Paddy Surveyor", page_icon="🌾")
 st.title("🌾 AI වී අස්වනු සමීක්ෂණ පද්ධතිය")
 st.write("කුඹුරේ වී කරල් සහිත ඡායාරූපයක් ඇතුළත් කර AI තාක්ෂණික වාර්තාව ක්ෂණිකව ලබා ගන්න.")
 
-# 2. පරිශීලකයාගෙන් API Key එක ලබා ගන්නා කොටස (ආරක්ෂාව සඳහා)
+# 2. පරිශීලකයාගෙන් API Key එක ලබා ගන්නා කොටස
 api_key = st.text_input("ඔයාගේ Gemini API Key එක මෙතැනට ඇතුළත් කරන්න:", type="password")
 
-# 3. ඡායාරූපයක් ඇතුළත් කිරීමට (Upload) බොත්තමක් සෑදීම
+# 3. ඡායාරූපයක් ඇතුළත් කිරීමට බොත්තමක් සෑදීම
 uploaded_file = st.file_uploader("කුඹුරේ ඡායාරූපයක් තෝරන්න (Upload Image)...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    # පින්තූරය තිරය මත පෙන්වීම
     image = Image.open(uploaded_file)
     st.image(image, caption='ඇතුළත් කළ ඡායාරූපය', use_container_width=True)
     
@@ -23,11 +33,9 @@ if uploaded_file is not None:
         if not api_key:
             st.error("කරුණාකර ඉදිරියට යාමට ඔයාගේ Gemini API Key එක ඇතුළත් කරන්න!")
         else:
-            # Gemini පද්ධතිය ක්‍රියාත්මක කිරීම
             genai.configure(api_key=api_key)
             model = genai.GenerativeModel('gemini-2.5-flash')
             
-            # AI එකට දෙන සිංහල/ඉංග්‍රීසි මිශ්‍ර විධානය
             prompt = """
             Analyze this image of a paddy field or rice panicle for an agricultural survey.
             Provide the response in clear bullet points in Sinhala language. Include:
@@ -44,4 +52,5 @@ if uploaded_file is not None:
                     st.subheader("📊 AI ක්ෂේත්‍ර වාර්තාව:")
                     st.write(response.text)
                 except Exception as e:
+                    st.error(f"සම්බන්ධතාවයේ දෝෂයක් පවතී: {e}")
                     st.error(f"සම්බන්ධතාවයේ දෝෂයක් පවතී: {e}")
