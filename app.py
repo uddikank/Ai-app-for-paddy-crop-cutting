@@ -53,4 +53,3 @@ if uploaded_file is not None:
                     st.write(response.text)
                 except Exception as e:
                     st.error(f"සම්බන්ධතාවයේ දෝෂයක් පවතී: {e}")
-                    st.error(f"සම්බන්ධතාවයේ දෝෂයක් පවතී: {e}")
