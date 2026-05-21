@@ -1,17 +1,6 @@
-import os
-import subprocess
-import sys
-
-# සර්වර් එක ඇතුළත අවශ්‍ය මෙවලම් බලෙන්ම ඉන්ස්ටෝල් කරවන කොටස
-try:
-    import google.generativeai as genai
-    from PIL import Image
-except ModuleNotFoundError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "google-generativeai", "pillow"])
-    import google.generativeai as genai
-    from PIL import Image
-
 import streamlit as st
+import google.generativeai as genai
+from PIL import Image
 
 # 1. ඇප් එකේ මුහුණත සහ මාතෘකා සැකසීම
 st.set_page_config(page_title="AI Paddy Surveyor", page_icon="🌾")
@@ -34,7 +23,9 @@ if uploaded_file is not None:
             st.error("කරුණාකර ඉදිරියට යාමට ඔයාගේ Gemini API Key එක ඇතුළත් කරන්න!")
         else:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-2.5-flash')
+            
+            # මෙතැනදී අපි දැනට පවතින ස්ථාවරම මාදිලිය භාවිතා කරමු
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
             prompt = """
             Analyze this image of a paddy field or rice panicle for an agricultural survey.
