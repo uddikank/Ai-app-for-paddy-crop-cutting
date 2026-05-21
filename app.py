@@ -22,18 +22,17 @@ if uploaded_file is not None:
         if not api_key:
             st.error("කරුණාකර ඉදිරියට යාමට ඔයාගේ Gemini API Key එක ඇතුළත් කරන්න!")
         else:
-            # API Key එක සම්බන්ධ කිරීම
             genai.configure(api_key=api_key)
             
-            # 2026 වසරේ පවතින නිල සහ වඩාත්ම ස්ථාවර නිදහස් මාදිලිය (Free Tier Model)
-            model = genai.GenerativeModel('gemini-2.0-flash')
+            # Quota සීමාවන් නොමැති ස්ථාවර කෘෂිකාර්මික විශ්ලේෂණ සඳහා සුදුසුම මාදිලිය
+            model = genai.GenerativeModel('gemini-1.5-pro')
             
             prompt = """
             Analyze this image of a paddy field or rice panicle for an agricultural survey.
             Provide the response in clear bullet points in Sinhala language. Include:
             1. Estimated Panicle Count (වී කරල් ගණන පිළිබඳ දළ තක්සේරුව)
             2. Grain Density (වී ඇටවල පිරිමාව - High/Medium/Low)
-            3. Crop Maturity (පරිණතභාවය සහ අස්වනු නෙලීමට ඇති සූදානම)
+            3. Crop Maturity (පරිණතභාවය සහ අස්වනු ನෙලීමට ඇති සූදානම)
             4. Brief technical recommendation for extension officers.
             """
             
