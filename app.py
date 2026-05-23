@@ -1,18 +1,25 @@
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 from PIL import Image
-import time
+import base64
+import io
 
 # 1. ඇප් එකේ මුහුණත සහ මාතෘකා සැකසීම
 st.set_page_config(page_title="AI Paddy Surveyor", page_icon="🌾")
-st.title("🌾 AI වී අස්වනු සමීක්ෂණ පද්ධතිය")
-st.write("කුඹුරේ වී කරල් සහිත ඡායාරූපයක් ඇතුළත් කර AI තාක්ෂණික වාර්තාව ක්ෂණිකව ලබා ගන්න.")
+st.title("🌾 AI වී අස්වනු සමීක්ෂණ පද්ධතිය (Groq Speed)")
+st.write("කුඹුරේ වී කරල් සහිත ඡායාරූපයක් ඇතුළත් කර ක්ෂණික AI තාක්ෂණික වාර්තාව ලබා ගන්න.")
 
 # 2. පරිශීලකයාගෙන් API Key එක ලබා ගන්නා කොටස
-api_key = st.text_input("ඔයාගේ Gemini API Key එක මෙතැනට ඇතුළත් කරන්න:", type="password")
+api_key = st.text_input("ඔයාගේ Groq API Key එක මෙතැනට ඇතුළත් කරන්න (gsk_...):", type="password")
 
 # 3. ඡායාරූපයක් ඇතුළත් කිරීමට බොත්තමක් සෑදීම
 uploaded_file = st.file_uploader("කුඹුරේ ඡායාරූපයක් තෝරන්න (Upload Image)...", type=["jpg", "jpeg", "png"])
+
+# පින්තූරය Groq එකට කියවිය හැකි පරිදි සකසන ශ්‍රිතය (Helper function)
+def encode_image(image):
+    buffered = io.BytesIO()
+    image.save(buffered, format="JPEG")
+    return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
@@ -21,31 +28,48 @@ if uploaded_file is not None:
     # 4. AI විශ්ලේෂණ බොත්තම ක්‍රියාත්මක වීම
     if st.button("AI හරහා පරීක්ෂා කරන්න ➔"):
         if not api_key:
-            st.error("කරුණාකර ඉදිරියට යාමට ඔයාගේ Gemini API Key එක ඇතුළත් කරන්න!")
+            st.error("කරුණාකර ඉදිරියට යාමට ඔයාගේ Groq API Key එක ඇතුළත් කරන්න!")
         else:
-            # සර්වර් එක එක දිගට Request වීම වැළැක්වීම සඳහා තත්පර 2ක කුඩා විවේකයක් ලබා දීම
-            time.sleep(2)
-            
-            # API Key එක සම්බන්ධ කිරීම
-            genai.configure(api_key=api_key)
-            
-            # වත්මන් නිල සහ වඩාත්ම ස්ථාවර නොමිලේ දෙන මාදිලිය
-            model = genai.GenerativeModel('gemini-2.0-flash')
-            
-            prompt = """
-            Analyze this image of a paddy field or rice panicle for an agricultural survey.
-            Provide the response in clear bullet points in Sinhala language. Include:
-            1. Estimated Panicle Count (වී කරල් ගණන පිළිබඳ දළ තක්සේරුව)
-            2. Grain Density (වී ඇටවල පිරිමාව - High/Medium/Low)
-            3. Crop Maturity (පරිණතභාවය සහ අස්වනු නෙලීමට ඇති සූදානම)
-            4. Brief technical recommendation for extension officers.
-            """
-            
-            with st.spinner('Gemini AI පද්ධතිය ඡායාරූපය විශ්ලේෂණය කරමින් පවතී. කරුණාකර රැඳී සිටින්න...'):
+            with st.spinner('Groq AI පද්ධතිය ඡායාරූපය විශ්ලේෂණය කරමින් පවතී. කරුණාකර රැඳී සිටින්න...'):
                 try:
-                    response = model.generate_content([prompt, image])
+                    # පින්තූරය සකස් කිරීම
+                    base64_image = encode_image(image)
+                    
+                    # Groq ක්ලයන්ට් එක සක්‍රීය කිරීම
+                    client = Groq(api_key=api_key)
+                    
+                    # ලොව වේගවත්ම Vision මාදිලිය භාවිතා කිරීම
+                    chat_completion = client.chat.completions.create(
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": """
+                                        Analyze this image of a paddy field or rice panicle for an agricultural survey.
+                                        Provide the response in clear bullet points in Sinhala language. Include:
+                                        1. Estimated Panicle Count (වී කරල් ගණන පිළිබඳ දළ තක්සේරුව)
+                                        2. Grain Density (වී ඇටවල පිරිමාව - High/Medium/Low)
+                                        3. Crop Maturity (පරිණතභාවය සහ අස්වනු නෙලීමට ඇති සූදානම)
+                                        4. Brief technical recommendation for extension officers.
+                                        """
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{base64_image}",
+                                        },
+                                    },
+                                ],
+                            }
+                        ],
+                        model="llama-3.2-11b-vision-preview",
+                    )
+                    
                     st.success("විශ්ලේෂණය සාර්ථකයි!")
                     st.subheader("📊 AI ක්ෂේත්‍ර වාර්තාව:")
-                    st.write(response.text)
+                    st.write(chat_completion.choices[0].message.content)
+                    
                 except Exception as e:
                     st.error(f"සම්බන්ධතාවයේ දෝෂයක් පවතී: {e}")
